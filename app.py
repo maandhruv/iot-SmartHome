@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,url_for,redirect,session,flash, get_flashed_messages
+from flask import Flask,render_template,request,url_for,redirect,session,flash,jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
 import json
@@ -77,6 +77,7 @@ def login():
             return redirect('/dashboard')
         
         else:
+            flash('Incorrect password.', 'error')
             return render_template('login.html',error='Invalid User')
         
     return render_template('login.html')
@@ -95,18 +96,33 @@ def dashboard():
                 with open(file_path, "r") as f:
                     try:
                         data = json.load(f)
-                        
                         if isinstance(data, dict):
                             data = [data]
                         device_data.extend(data) 
                     except (json.JSONDecodeError, ValueError):
                         continue 
-                
         return render_template('dashboard.html', user=user, device_data=device_data)
     
     return redirect('/login')
 
-
+@app.route('/device_data')
+@login_required
+def device_data():
+    device_data = []
+    device_ids = [1, 2, 3, 4, 5]
+    for device_id in device_ids:
+        file_path = os.path.join(app.root_path, "devices", f"data_{device_id}.json")
+        
+        if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                try:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        data = [data]
+                    device_data.extend(data)
+                except (json.JSONDecodeError, ValueError):
+                    continue 
+    return jsonify(device_data)
 
 
 @app.route('/logout')
@@ -116,6 +132,6 @@ def logout():
 
 
 
-
 if __name__=="__main__":
     app.run(debug=True,port=8000)
+
